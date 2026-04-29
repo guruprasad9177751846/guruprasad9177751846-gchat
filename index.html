@@ -1,103 +1,123 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GChat - Serverless Chat</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="css/style.css">
-  <meta name="theme-color" content="#075e54">
-  <meta name="gchat-repo" content="guruprasad9177751846/guruprasad9177751846-gchat">
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register(new URL('./sw.js', window.location.href), { scope: './', updateViaCache: 'none' })
-        .then(function (reg) {
-          reg.update();
-        })
-        .catch(function () {});
-    }
-  </script>
-</head>
-<body>
-  <div id="app">
-    <header class="wa-header" role="banner">
-      <div class="wa-header-toolbar">
-        <div class="wa-header-title-block">
-          <h1 class="wa-app-title">GChat</h1>
-          <p id="status" class="wa-status" aria-live="polite">Connecting…</p>
-        </div>
-        <button type="button" id="settings-btn" class="wa-icon-btn wa-header-actions" onclick="openSettings()" title="Menu &amp; settings" aria-label="Menu and settings">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
-          </svg>
-        </button>
-      </div>
-    </header>
-    
-    <div id="config-panel" class="modal">
-      <div class="modal-content">
-        <h3>Setup GitHub Backend</h3>
-        <p class="config-hint">Messages are stored as <strong>Issues</strong> on your GitHub repo. This site uses <code>guruprasad9177751846/guruprasad9177751846-gchat</code> (owner matches your GitHub username; repo name is <code>guruprasad9177751846-gchat</code>).</p>
-        <label class="field-label" for="repo-input">Repository</label>
-        <input id="repo-input" name="repo" autocomplete="off" placeholder="guruprasad9177751846/guruprasad9177751846-gchat" value="">
-        <label class="field-label" for="token-input">Token <span class="optional-badge">optional</span></label>
-        <input id="token-input" name="pat" type="password" autocomplete="off" placeholder="Leave blank to browse only">
-        <p class="pat-explainer"><strong>No token:</strong> public repo read‑only (~60 requests/hour → often ~30–60s before new messages appear). <strong>Everyone who wants chat to feel instant should save a token here</strong> — same PAT works for send + fast receive (~1s). Sending always requires a token.</p>
-        <details class="pat-details">
-          <summary>To send messages — create a token</summary>
-          <p class="pat-explainer">Stored only in this browser.</p>
-          <div class="token-actions">
-            <button type="button" class="btn-link" onclick="openClassicPatPage()">New classic token →</button>
-            <button type="button" class="btn-link" onclick="openFineGrainedPatPage()">New fine‑grained token →</button>
-          </div>
-        </details>
-        <button type="button" id="btn-save-config" onclick="saveConfig()">Save & Start</button>
-      </div>
-    </div>
-    
-    <div id="chat-container">
-      <div id="messages" class="wa-messages-scroll">
-        <div id="load-older-row" class="wa-load-older-row" hidden>
-          <button type="button" id="btn-load-older" class="wa-load-older-btn" onclick="loadOlderMessages()">Load older messages</button>
-        </div>
-        <p id="chat-empty-hint" class="wa-chat-empty-hint">No messages yet — say hi below.</p>
-      </div>
-
-      <div id="composer-wrap">
-        <div id="composer-toolbar" class="wa-toolbar">
-          <button type="button" id="btn-emoji" class="wa-tool-btn" title="Emoji" aria-label="Emoji">😊</button>
-          <button type="button" id="btn-gallery" class="wa-tool-btn" data-requires-token="true" title="Gallery" aria-label="Photo from gallery">🖼</button>
-          <button type="button" id="btn-camera" class="wa-tool-btn" data-requires-token="true" title="Camera" aria-label="Camera">📷</button>
-          <span class="wa-toolbar-divider" aria-hidden="true"></span>
-          <button type="button" id="btn-call-voice" class="wa-tool-btn wa-tool-call" title="Voice call (Jitsi)" aria-label="Voice call">📞</button>
-          <button type="button" id="btn-call-video" class="wa-tool-btn wa-tool-call" title="Video call (Jitsi)" aria-label="Video call">📹</button>
-          <span class="wa-toolbar-hint">Jitsi · same room per repo</span>
-        </div>
-        <div id="emoji-panel" class="wa-emoji-panel" aria-hidden="true">
-          <div id="emoji-grid"></div>
-        </div>
-
-        <input type="file" id="image-file-input" accept="image/*" hidden>
-        <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
-
-        <div id="input-area" class="wa-input-area">
-          <div class="wa-input-shell">
-            <textarea id="message-input" placeholder="Message" maxlength="4000" rows="1" autocomplete="off" aria-label="Message"></textarea>
-          </div>
-          <button id="send-btn" type="button" class="wa-send-btn" onclick="sendMessage()" aria-label="Send message" title="Send">
-            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-    
-    <div id="notification-perms" class="wa-notify-strip">
-      <button type="button" class="wa-notify-btn" onclick="requestNotificationPermission()">Turn on notifications</button>
-    </div>
-  </div>
-
-  <script src="js/github-api.js"></script>
-  <script src="js/app.js"></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GChat - Serverless Chat</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#075e54">
+  <meta name="gchat-repo" content="guruprasad9177751846/guruprasad9177751846-gchat">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register(new URL('./sw.js', window.location.href), { scope: './', updateViaCache: 'none' })
+        .then(function (reg) {
+          reg.update();
+        })
+        .catch(function () {});
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header class="wa-header" role="banner">
+      <div class="wa-header-toolbar">
+        <div class="wa-header-title-block">
+          <h1 class="wa-app-title">GChat</h1>
+          <p id="status" class="wa-status" aria-live="polite">Connecting…</p>
+        </div>
+        <div class="wa-header-actions-row">
+          <button type="button" id="btn-header-call-voice" class="wa-header-call-btn" onclick="openVoiceCall()" title="Voice call (Jitsi)" aria-label="Voice call">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+          </button>
+          <button type="button" id="btn-header-call-video" class="wa-header-call-btn" onclick="openVideoCall()" title="Video call (Jitsi)" aria-label="Video call">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+          </button>
+          <button type="button" id="settings-btn" class="wa-icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <div id="config-panel" class="modal">
+      <div class="modal-content">
+        <h3>Setup GitHub Backend</h3>
+        <p class="config-hint">Messages are stored as <strong>Issues</strong> on your GitHub repo. Photos stay in the Issue JSON; video/voice files are stored under <code>gchat-media/</code> via the Contents API (token needs Contents write).</p>
+        <label class="field-label" for="repo-input">Repository</label>
+        <input id="repo-input" name="repo" autocomplete="off" placeholder="guruprasad9177751846/guruprasad9177751846-gchat" value="">
+        <label class="field-label" for="token-input">Token <span class="optional-badge">optional</span></label>
+        <input id="token-input" name="pat" type="password" autocomplete="off" placeholder="Leave blank to browse only">
+        <p class="pat-explainer"><strong>No token:</strong> public repo read‑only (~60 requests/hour → often ~30–60s before new messages appear). <strong>Everyone who wants chat to feel instant should save a token here</strong> — same PAT works for send + fast receive (~1s). Sending always requires a token.</p>
+        <details class="pat-details">
+          <summary>To send messages — create a token</summary>
+          <p class="pat-explainer">Stored only in this browser.</p>
+          <div class="token-actions">
+            <button type="button" class="btn-link" onclick="openClassicPatPage()">New classic token →</button>
+            <button type="button" class="btn-link" onclick="openFineGrainedPatPage()">New fine‑grained token →</button>
+          </div>
+        </details>
+
+        <div class="settings-notify-block">
+          <label class="field-label" for="notification-settings-status">Notifications</label>
+          <p id="notification-settings-status" class="settings-notify-status">Not requested yet.</p>
+          <button type="button" id="btn-settings-notifications" class="settings-notify-action" onclick="requestNotificationPermission()">Enable notifications</button>
+        </div>
+
+        <button type="button" id="btn-save-config" onclick="saveConfig()">Save & Start</button>
+      </div>
+    </div>
+    
+    <div id="chat-container">
+      <div id="messages" class="wa-messages-scroll">
+        <div id="load-older-row" class="wa-load-older-row" hidden>
+          <button type="button" id="btn-load-older" class="wa-load-older-btn" onclick="loadOlderMessages()">Load older messages</button>
+        </div>
+        <p id="chat-empty-hint" class="wa-chat-empty-hint">No messages yet — say hi below.</p>
+      </div>
+
+      <div id="composer-wrap">
+        <div id="emoji-panel" class="wa-emoji-panel" aria-hidden="true">
+          <div id="emoji-grid"></div>
+        </div>
+
+        <input type="file" id="image-file-input" accept="image/*" hidden>
+        <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+        <input type="file" id="video-file-input" accept="video/*" hidden>
+
+        <div class="wa-composer-panel">
+          <div class="wa-composer-tools" role="toolbar" aria-label="Attachments">
+            <button type="button" id="btn-emoji" class="wa-composer-tool" title="Emoji" aria-label="Emoji">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+            </button>
+            <button type="button" id="btn-gallery" class="wa-composer-tool" data-requires-token="true" title="Photos" aria-label="Photo from gallery">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </button>
+            <button type="button" id="btn-camera" class="wa-composer-tool" data-requires-token="true" title="Camera" aria-label="Camera">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            </button>
+            <button type="button" id="btn-video" class="wa-composer-tool" data-requires-token="true" title="Video (max 50 MB)" aria-label="Upload video">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+            </button>
+            <button type="button" id="btn-voice-note" class="wa-composer-tool" data-requires-token="true" title="Voice message — tap to start/stop" aria-label="Voice message">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="23"/></svg>
+            </button>
+          </div>
+          <div class="wa-input-shell wa-input-shell-grow">
+            <textarea id="message-input" placeholder="Message" maxlength="4000" rows="1" autocomplete="off" aria-label="Message"></textarea>
+          </div>
+          <button id="send-btn" type="button" class="wa-send-btn" onclick="sendMessage()" aria-label="Send message" title="Send">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/github-api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

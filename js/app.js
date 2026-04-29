@@ -40,9 +40,27 @@ function sanitizeDataImageSrc(url) {
   return '';
 }
 
+/** Only https raw.githubusercontent.com — embedded media URLs in bubbles */
+function sanitizeGithubRawMediaUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' || u.hostname !== 'raw.githubusercontent.com') return '';
+    return url;
+  } catch {
+    return '';
+  }
+}
+
+const IMAGE_INPUT_MAX_BYTES = 5 * 1024 * 1024;
+
 /** Compress image file to JPEG data URL */
 function compressImageFile(file, maxW = 880, quality = 0.78) {
   return new Promise((resolve, reject) => {
+    if (file.size > IMAGE_INPUT_MAX_BYTES) {
+      reject(new Error('Image must be at most 5 MB.'));
+      return;
+    }
     const img = new Image();
     const blobUrl = URL.createObjectURL(file);
     img.onload = () => {
@@ -288,6 +306,7 @@ function requestNotificationPermissionFromGesture() {
 function openSettings() {
   document.getElementById('repo-input').value = config.repo || repoHintFromMetaOrPages() || '';
   document.getElementById('token-input').value = config.token ? config.token : '';
+  syncNotificationSettingsUi();
   showConfigModal();
 }
 
@@ -297,6 +316,22 @@ function openClassicPatPage() {
 
 function openFineGrainedPatPage() {
   window.open('https://github.com/settings/personal-access-tokens/new', '_blank', 'noopener,noreferrer');
+}
+
+function syncNotificationSettingsUi() {
+  const el = document.getElementById('notification-settings-status');
+  if (!el) return;
+  if (!('Notification' in window)) {
+    el.textContent = 'Not supported in this browser.';
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    el.textContent = 'Enabled — alerts will appear for new messages when this tab is in the background.';
+  } else if (Notification.permission === 'denied') {
+    el.textContent = 'Blocked — change Notifications for this site in the browser lock/site icon menu.';
+  } else {
+    el.textContent = 'Off — tap Enable notifications below after saving your repo/token.';
+  }
 }
 
 function jitsiRoomName() {
@@ -334,6 +369,11 @@ function bindWakePollingOnce() {
 
 async function initApp() {
   gchatAPI = new GitHubAPI(config.repo, config.token);
+  try {
+    await gchatAPI.ensureDefaultBranch();
+  } catch (e) {
+    console.warn('[GChat] Repo branch:', e);
+  }
   document.getElementById('status').textContent = hasAuthToken()
     ? `Connected · refresh ~${POLL_MS_AUTH / 1000}s`
     : `Read-only · ~${Math.round(POLL_MS_ANON / 1000)}s between polls — save token (⚙️) for ~1s`;
@@ -545,6 +585,34 @@ function createMessageEl(msg) {
       capEl.textContent = cap;
       bubble.appendChild(capEl);
     }
+  } else if (msg.type === 'video' && msg.videoUrl) {
+    const safe = sanitizeGithubRawMediaUrl(msg.videoUrl);
+    if (safe) {
+      const video = document.createElement('video');
+      video.className = 'bubble-video';
+      video.controls = true;
+      video.preload = 'metadata';
+      video.playsInline = true;
+      video.src = safe;
+      bubble.appendChild(video);
+    }
+    const cap = msg.content ? String(msg.content).trim() : '';
+    if (cap) {
+      const capEl = document.createElement('div');
+      capEl.className = 'bubble-caption';
+      capEl.textContent = cap;
+      bubble.appendChild(capEl);
+    }
+  } else if (msg.type === 'audio' && msg.audioUrl) {
+    const safe = sanitizeGithubRawMediaUrl(msg.audioUrl);
+    if (safe) {
+      const audio = document.createElement('audio');
+      audio.className = 'bubble-audio';
+      audio.controls = true;
+      audio.preload = 'metadata';
+      audio.src = safe;
+      bubble.appendChild(audio);
+    }
   } else {
     const body = document.createElement('div');
     body.className = 'bubble-text';
@@ -585,9 +653,94 @@ async function handleImageSelected(file) {
     alert('Image upload requires a GitHub token.');
     return;
   }
+  if (file.size > IMAGE_INPUT_MAX_BYTES) {
+    alert('Image must be at most 5 MB.');
+    return;
+  }
   try {
     const jpeg = await compressImageFile(file);
     await gchatAPI.sendImage(userId, '', jpeg, lastMessageTime);
+    scheduleQuickPollAfterSend();
+  } catch (e) {
+    alert(e.message || String(e));
+  }
+}
+
+const VIDEO_INPUT_MAX_BYTES = 50 * 1024 * 1024;
+
+let voiceMediaRecorder = null;
+let voiceMediaStream = null;
+
+function setVoiceRecordingUi(active) {
+  const btn = document.getElementById('btn-voice-note');
+  if (!btn) return;
+  btn.classList.toggle('wa-recording', active);
+  btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+}
+
+async function toggleVoiceNoteRecording() {
+  if (!hasAuthToken()) {
+    alert('Voice messages require a GitHub token with Contents write access.');
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert('Microphone access is not available in this browser.');
+    return;
+  }
+  if (voiceMediaRecorder && voiceMediaRecorder.state === 'recording') {
+    voiceMediaRecorder.stop();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceMediaStream = stream;
+    let mime = '';
+    if (typeof MediaRecorder !== 'undefined') {
+      if (MediaRecorder.isTypeSupported('audio/webm')) mime = 'audio/webm';
+      else if (MediaRecorder.isTypeSupported('audio/mp4')) mime = 'audio/mp4';
+    }
+    const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    const chunks = [];
+    mr.ondataavailable = e => {
+      if (e.data && e.data.size) chunks.push(e.data);
+    };
+    mr.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      voiceMediaStream = null;
+      voiceMediaRecorder = null;
+      setVoiceRecordingUi(false);
+      const blob = new Blob(chunks, { type: mr.mimeType || mime || 'audio/webm' });
+      if (blob.size < 200) return;
+      try {
+        await gchatAPI.sendVoiceNote(userId, blob, blob.type || 'audio/webm', lastMessageTime);
+        scheduleQuickPollAfterSend();
+      } catch (e) {
+        alert(e.message || String(e));
+      }
+    };
+    voiceMediaRecorder = mr;
+    mr.start();
+    setVoiceRecordingUi(true);
+  } catch (e) {
+    alert(e.message || 'Allow microphone access to send a voice message.');
+  }
+}
+
+async function handleVideoSelected(file) {
+  if (!file || !file.type.startsWith('video/')) return;
+  if (!hasAuthToken()) {
+    alert('Video upload requires a GitHub token with Contents write access.');
+    return;
+  }
+  if (file.size > VIDEO_INPUT_MAX_BYTES) {
+    alert('Video must be at most 50 MB.');
+    return;
+  }
+  const caption = document.getElementById('message-input').value.trim();
+  try {
+    await gchatAPI.sendVideo(userId, caption, file, lastMessageTime);
+    document.getElementById('message-input').value = '';
+    document.getElementById('message-input').dispatchEvent(new Event('input'));
     scheduleQuickPollAfterSend();
   } catch (e) {
     alert(e.message || String(e));
@@ -614,6 +767,8 @@ function showNotification(msg) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   let preview = '';
   if (msg.type === 'image') preview = '📷 Photo';
+  else if (msg.type === 'video') preview = '🎬 Video';
+  else if (msg.type === 'audio') preview = '🎤 Voice message';
   else preview = String(msg.content || '').slice(0, 80);
   if (preview.length > 80) preview += '…';
   try {
@@ -643,6 +798,7 @@ async function requestNotificationPermission() {
   if (perm === 'granted') {
     new Notification('GChat', { body: 'You will get alerts for new messages.' });
   }
+  syncNotificationSettingsUi();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -709,8 +865,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('camera-input').click();
   });
 
-  document.getElementById('btn-call-voice').addEventListener('click', openVoiceCall);
-  document.getElementById('btn-call-video').addEventListener('click', openVideoCall);
+  document.getElementById('btn-video').addEventListener('click', () => {
+    document.getElementById('video-file-input').click();
+  });
+
+  document.getElementById('video-file-input').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (f) void handleVideoSelected(f);
+  });
+
+  document.getElementById('btn-voice-note').addEventListener('click', () => {
+    void toggleVoiceNoteRecording();
+  });
 
   resizeComposerTextarea();
 

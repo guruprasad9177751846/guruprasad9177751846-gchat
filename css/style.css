@@ -99,6 +99,37 @@ body {
   text-overflow: ellipsis;
 }
 
+.wa-header-actions-row {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.wa-header-call-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wa-header-call-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.wa-header-call-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
 .wa-icon-btn {
   flex-shrink: 0;
   display: inline-flex;
@@ -281,72 +312,125 @@ body {
   font-size: 0.942rem;
 }
 
-/* —— Composer —— */
+.settings-notify-block {
+  padding: 0.65rem 0;
+  margin: 0.25rem 0 0.35rem;
+  border-top: 1px solid #e9edef;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+}
+
+.settings-notify-status {
+  font-size: 0.78rem;
+  color: #667781;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.settings-notify-action {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #027eb5;
+  background: transparent;
+  border: 1px solid #b8d4e8;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+
+.settings-notify-action:hover {
+  background: rgba(2, 126, 181, 0.06);
+}
+
+.bubble-video {
+  display: block;
+  width: 100%;
+  max-width: min(100%, 320px);
+  max-height: min(240px, 45vh);
+  border-radius: 0.45rem;
+  background: #000;
+}
+
+.bubble-audio {
+  display: block;
+  width: 100%;
+  min-width: 200px;
+  max-width: 280px;
+  height: 2.25rem;
+}
+
+/* —— Composer dock (Telegram / WhatsApp style) —— */
 #composer-wrap {
   flex-shrink: 0;
   position: relative;
   background: var(--wa-composer-bg);
   border-top: 1px solid rgba(0, 0, 0, 0.06);
-  padding-bottom: var(--safe-bottom);
+  padding-bottom: 0;
 }
 
-.wa-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.4rem 0.55rem 0.15rem;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.wa-tool-btn {
-  border: none;
-  background: transparent;
-  font-size: 1.35rem;
-  line-height: 1;
-  padding: 0.35rem;
-  border-radius: 0.45rem;
-  cursor: pointer;
-  opacity: 0.92;
-}
-
-.wa-tool-btn:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.wa-tool-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-}
-
-.wa-tool-call {
-  font-size: 1.15rem;
-  padding: 0.4rem;
-}
-
-.wa-toolbar-divider {
-  width: 1px;
-  height: 1.1rem;
-  background: rgba(0, 0, 0, 0.12);
-  margin: 0 0.15rem;
-}
-
-.wa-toolbar-hint {
-  font-size: 0.66rem;
-  color: #667781;
-  flex: 1 1 8rem;
-  line-height: 1.25;
-  margin-left: 0.15rem;
-}
-
-.wa-input-area {
+.wa-composer-panel {
   display: flex;
   align-items: flex-end;
-  gap: 0.45rem;
-  padding: 0.35rem 0.55rem 0.55rem;
+  gap: 0.35rem;
+  padding: 0.45rem 0.55rem calc(0.5rem + var(--safe-bottom));
   max-width: 1000px;
   margin: 0 auto;
+}
+
+.wa-composer-tools {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.08rem;
+  padding-bottom: 0.15rem;
+}
+
+.wa-composer-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #54656f;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.wa-composer-tool:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.wa-composer-tool:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.wa-composer-tool.wa-recording {
+  color: #e53935;
+  background: rgba(229, 57, 53, 0.12);
+  animation: wa-pulse-rec 1.2s ease-in-out infinite;
+}
+
+@keyframes wa-pulse-rec {
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.wa-input-shell-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.wa-input-shell-grow #message-input {
+  min-height: 2.5rem;
 }
 
 .wa-input-shell {
