@@ -51,14 +51,24 @@ if (!config.repo) {
 async function saveConfig() {
   const repo = document.getElementById('repo-input').value.trim();
   const token = document.getElementById('token-input').value.trim();
-  
+
   if (!repo || !token) return alert('Enter repo and token!');
-  
+
+  // Must run in the same user gesture as the button click — before any await — or browsers block the prompt.
+  requestNotificationPermissionFromGesture();
+
   config = { repo, token };
   localStorage.setItem('gchatConfig', JSON.stringify(config));
   document.getElementById('config-panel').style.display = 'none';
-  
+
   await initApp();
+}
+
+/** Call synchronously from Save & Start click only (preserves gesture). */
+function requestNotificationPermissionFromGesture() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'default') return;
+  Notification.requestPermission();
 }
 
 function openClassicPatPage() {
@@ -73,7 +83,6 @@ async function initApp() {
   gchatAPI = new GitHubAPI(config.repo, config.token);
   document.getElementById('status').textContent = 'Connected';
   startPolling();
-  requestNotificationPermission();
 }
 
 function startPolling() {
@@ -118,18 +127,34 @@ async function sendMessage() {
 }
 
 function showNotification(msg) {
-  if (Notification.permission === 'granted') {
-    new Notification('New Message', {
-      body: `${msg.sender}: ${msg.content.substring(0, 50)}...`,
-      icon: 'data:image/png;base64,iVBORw0KG...'
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const preview = msg.content.length > 80 ? `${msg.content.slice(0, 80)}…` : msg.content;
+  try {
+    new Notification('GChat', {
+      body: `${msg.sender}: ${preview}`,
+      tag: `gchat-${msg.id}`
     });
+  } catch (e) {
+    console.warn('Notification failed:', e);
   }
 }
 
 async function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') console.log('Notifications enabled');
+  if (!('Notification' in window)) {
+    alert('This browser does not support notifications.');
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    alert('Notifications are blocked for this site. Use the lock icon in the address bar → Site settings → Notifications → Allow.');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    new Notification('GChat', { body: 'Notifications are already enabled.' });
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    new Notification('GChat', { body: 'You will get alerts for new messages.' });
   }
 }
 

@@ -18,13 +18,22 @@ class GitHubAPI {
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       
       const issues = await response.json();
-      return issues.map(issue => ({
-        id: issue.number,
-        sender: issue.title.split(':')[1]?.trim() || 'Unknown',
-        timestamp: issue.created_at,
-        content: JSON.parse(issue.body || '{}').content || issue.body,
-        type: JSON.parse(issue.body || '{}').type || 'text'
-      })).filter(msg => msg.content);
+      return issues.map(issue => {
+        let body = {};
+        try {
+          body = JSON.parse(issue.body || '{}');
+        } catch {
+          body = {};
+        }
+        const content = body.content ?? issue.body;
+        return {
+          id: issue.number,
+          sender: body.sender_id || 'Unknown',
+          timestamp: issue.created_at,
+          content,
+          type: body.type || 'text'
+        };
+      }).filter(msg => msg.content);
     } catch (error) {
       console.error('Fetch error:', error);
       return [];
