@@ -1,5 +1,15 @@
 // Main App Logic: Polling, UI, Notifications
 
+/** GitHub username from hostname: USER.github.io → USER */
+function inferGithubPagesOwner() {
+  try {
+    const gh = /^([^.]+)\.github\.io$/i.exec(window.location.hostname);
+    return gh ? gh[1] : '';
+  } catch {
+    return '';
+  }
+}
+
 /** GitHub Pages project sites: https://OWNER.github.io/REPO/ → OWNER/REPO */
 function inferGithubRepoFromPagesUrl() {
   try {
@@ -51,11 +61,28 @@ if (!config.repo) {
 async function saveConfig() {
   const repoRaw = document.getElementById('repo-input').value.trim();
   const token = document.getElementById('token-input').value.trim();
-  const repo = typeof normalizeGithubRepo === 'function' ? normalizeGithubRepo(repoRaw) : repoRaw;
+  let repo = typeof normalizeGithubRepo === 'function' ? normalizeGithubRepo(repoRaw) : repoRaw;
 
   if (!repo) return alert('Enter the repository (OWNER/repo).');
   if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) {
     return alert('Repository must look like OWNER/repo (or paste a full github.com/… URL).');
+  }
+
+  const pagesOwner = inferGithubPagesOwner();
+  if (pagesOwner) {
+    const [repoOwner, repoName] = repo.split('/');
+    if (repoOwner.toLowerCase() !== pagesOwner.toLowerCase()) {
+      const suggested = `${pagesOwner}/${repoName}`;
+      const fix = confirm(
+        `This site is "${pagesOwner}.github.io" but the repository owner is "${repoOwner}".\n\n` +
+          `Wrong owner names cause "Not Found" (404).\n\n` +
+          `Use "${suggested}" instead?`
+      );
+      if (fix) {
+        repo = suggested;
+        document.getElementById('repo-input').value = repo;
+      }
+    }
   }
 
   document.getElementById('repo-input').value = repo;
@@ -90,6 +117,12 @@ function requestNotificationPermissionFromGesture() {
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'default') return;
   Notification.requestPermission();
+}
+
+function openSettings() {
+  document.getElementById('repo-input').value = config.repo || repoHintFromMetaOrPages() || '';
+  document.getElementById('token-input').value = config.token ? config.token : '';
+  configPanel.style.display = 'flex';
 }
 
 function openClassicPatPage() {
