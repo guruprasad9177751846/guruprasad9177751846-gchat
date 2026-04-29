@@ -104,6 +104,15 @@ const COMMON_EMOJIS = [
   '💬'
 ];
 
+(function bindHtmlHandlersToWindow() {
+  window.saveConfig = saveConfig;
+  window.openSettings = openSettings;
+  window.sendMessage = sendMessage;
+  window.requestNotificationPermission = requestNotificationPermission;
+  window.openClassicPatPage = openClassicPatPage;
+  window.openFineGrainedPatPage = openFineGrainedPatPage;
+})();
+
 let messages = [];
 let lastMessageTime = null;
 let pollingInterval;
@@ -123,10 +132,16 @@ if (repoInputEl && !config.repo) {
   if (guessed) repoInputEl.value = guessed;
 }
 
-if (!config.repo) {
-  showConfigModal();
-} else {
-  hideConfigModal();
+if (configPanel) {
+  try {
+    if (!config.repo) {
+      showConfigModal();
+    } else {
+      hideConfigModal();
+    }
+  } catch (e) {
+    console.error('GChat modal init:', e);
+  }
 }
 
 function resetChatUiState() {
@@ -150,12 +165,14 @@ async function verifyGithubRepo(repo, token) {
 }
 
 function hideConfigModal() {
+  if (!configPanel) return;
   configPanel.classList.add('modal-dismissed');
   configPanel.style.display = 'none';
   configPanel.setAttribute('aria-hidden', 'true');
 }
 
 function showConfigModal() {
+  if (!configPanel) return;
   configPanel.classList.remove('modal-dismissed');
   configPanel.style.display = 'flex';
   configPanel.setAttribute('aria-hidden', 'false');
@@ -515,16 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-call-video').addEventListener('click', openVideoCall);
 
   if (config.repo) initApp();
-});
-
-/** Inline onclick / cached HTML expects globals on window */
-Object.assign(window, {
-  saveConfig,
-  openSettings,
-  sendMessage,
-  requestNotificationPermission,
-  openClassicPatPage,
-  openFineGrainedPatPage
 });
 
 window.addEventListener('beforeunload', () => {
