@@ -669,7 +669,6 @@ async function handleImageSelected(file) {
 const VIDEO_INPUT_MAX_BYTES = 50 * 1024 * 1024;
 
 let voiceMediaRecorder = null;
-let voiceMediaStream = null;
 
 function setVoiceRecordingUi(active) {
   const btn = document.getElementById('btn-voice-note');
@@ -688,12 +687,16 @@ async function toggleVoiceNoteRecording() {
     return;
   }
   if (voiceMediaRecorder && voiceMediaRecorder.state === 'recording') {
+    try {
+      if (typeof voiceMediaRecorder.requestData === 'function') voiceMediaRecorder.requestData();
+    } catch (_) {
+      /* ignore */
+    }
     voiceMediaRecorder.stop();
     return;
   }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    voiceMediaStream = stream;
     let mime = '';
     if (typeof MediaRecorder !== 'undefined') {
       if (MediaRecorder.isTypeSupported('audio/webm')) mime = 'audio/webm';
@@ -706,7 +709,6 @@ async function toggleVoiceNoteRecording() {
     };
     mr.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-      voiceMediaStream = null;
       voiceMediaRecorder = null;
       setVoiceRecordingUi(false);
       const blob = new Blob(chunks, { type: mr.mimeType || mime || 'audio/webm' });
@@ -784,14 +786,17 @@ function showNotification(msg) {
 async function requestNotificationPermission() {
   if (!('Notification' in window)) {
     alert('This browser does not support notifications.');
+    syncNotificationSettingsUi();
     return;
   }
   if (Notification.permission === 'denied') {
     alert('Notifications are blocked for this site. Use the lock icon in the address bar → Site settings → Notifications → Allow.');
+    syncNotificationSettingsUi();
     return;
   }
   if (Notification.permission === 'granted') {
     new Notification('GChat', { body: 'Notifications are already enabled.' });
+    syncNotificationSettingsUi();
     return;
   }
   const perm = await Notification.requestPermission();

@@ -542,31 +542,6 @@ body {
   background: #f0f2f5;
 }
 
-/* —— Notifications strip —— */
-.wa-notify-strip {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  padding: 0.35rem 0.55rem calc(0.45rem + var(--safe-bottom));
-  background: var(--wa-composer-bg);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.wa-notify-btn {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #027eb5;
-  background: transparent;
-  border: none;
-  padding: 0.35rem 0.75rem;
-  cursor: pointer;
-  border-radius: 1rem;
-}
-
-.wa-notify-btn:hover {
-  background: rgba(2, 126, 181, 0.08);
-}
-
 /* —— Modal —— */
 .modal {
   position: fixed;
@@ -756,11 +731,28 @@ input[type='password'] {
     color: #00a884;
   }
 
-  .wa-tool-btn:hover:not(:disabled) {
+  .wa-composer-tool {
+    color: #aebac1;
+  }
+
+  .wa-composer-tool:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.06);
   }
 
-  .wa-toolbar-hint {
+  .wa-header-call-btn {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .wa-header-call-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .settings-notify-block {
+    border-top-color: #3d4f5c;
+  }
+
+  .settings-notify-status {
     color: #8696a0;
   }
 
@@ -813,10 +805,5 @@ input[type='password'] {
 @media (max-width: 380px) {
   .bubble {
     max-width: 92%;
-  }
-
-  .wa-toolbar-hint {
-    flex-basis: 100%;
-    margin-top: 0.15rem;
   }
 }
