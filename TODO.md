@@ -14,9 +14,9 @@
 - 📄 Created README.md (instructions)
 
 ### Phase 1: GitHub Backend Config [⏳ PENDING - User Action]
-- Use **this** repo (`YOUR_USERNAME/gchat`) for Issues — no separate backend repo
-- Generate PAT: https://github.com/settings/tokens (scopes: repo or fine-grained Issues on `gchat`)
-- Config: Open app, enter `owner/gchat` and TOKEN in modal / localStorage
+- Use **this** repo (`guruprasad9177751846/guruprasad9177751846-gchat`) for Issues — no separate backend repo
+- Generate PAT: https://github.com/settings/tokens (scopes: repo or fine-grained Issues on `guruprasad9177751846-gchat`)
+- Config: Open app, enter `OWNER/REPO` and TOKEN in modal / localStorage
 
 ### Phase 2: Test Backend [⏳ PENDING]
 - Send test message via UI

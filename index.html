@@ -7,8 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/style.css">
   <meta name="theme-color" content="#25D366">
-  <!-- Optional: if you use a custom domain on Pages, set repo explicitly -->
-  <!-- <meta name="gchat-repo" content="YOUR_LOGIN/gchat"> -->
+  <meta name="gchat-repo" content="guruprasad9177751846/guruprasad9177751846-gchat">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(new URL('./sw.js', window.location.href), { scope: './' });
@@ -26,9 +25,9 @@
     <div id="config-panel" class="modal">
       <div class="modal-content">
         <h3>Setup GitHub Backend</h3>
-        <p class="config-hint">Use <strong>this</strong> repo (<code>yourname/gchat</code>) so messages are stored as Issues here—no separate backend repo.</p>
+        <p class="config-hint">Messages are stored as <strong>Issues</strong> on your GitHub repo. This site uses <code>guruprasad9177751846/guruprasad9177751846-gchat</code> (owner matches your GitHub username; repo name is <code>guruprasad9177751846-gchat</code>).</p>
         <label class="field-label" for="repo-input">Repository</label>
-        <input id="repo-input" name="repo" autocomplete="off" placeholder="owner/gchat" value="">
+        <input id="repo-input" name="repo" autocomplete="off" placeholder="guruprasad9177751846/guruprasad9177751846-gchat" value="">
         <label class="field-label" for="token-input">Token <span class="optional-badge">optional</span></label>
         <input id="token-input" name="pat" type="password" autocomplete="off" placeholder="Leave blank to browse only">
         <p class="pat-explainer"><strong>No token:</strong> you can load messages from a <strong>public</strong> repo only (slow polling — GitHub rate limits anonymous reads). <strong>Sending</strong> always requires a token; GitHub’s API never allows anonymous Issue creation.</p>
