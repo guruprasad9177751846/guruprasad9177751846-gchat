@@ -69,11 +69,7 @@ class GitHubAPI {
   async _fetchIssuesPage(pageNum) {
     const url = `${this.baseURL}${this._issueQueryParams()}&page=${pageNum}`;
     const response = await fetch(url, {
-      headers: {
-        ...this.headers,
-        'Cache-Control': 'no-cache',
-        Pragma: 'no-cache'
-      },
+      headers: this.headers,
       cache: 'no-store'
     });
     const link = response.headers.get('Link');

@@ -1,5 +1,5 @@
 // Service worker: network-first for HTML/JS/CSS so updates apply; cache as offline fallback only.
-const CACHE_NAME = 'gchat-v21';
+const CACHE_NAME = 'gchat-v22';
 const BASE = new URL('./', self.location.href).href;
 
 self.addEventListener('install', event => {
