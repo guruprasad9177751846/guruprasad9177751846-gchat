@@ -262,8 +262,8 @@ function applyUiMode() {
   });
 
   msgInput.placeholder = authed
-    ? 'Type a message…'
-    : 'Sending needs a token — GitHub requires login to create Issues';
+    ? 'Message'
+    : 'Open Settings (⋯) to add a token and send';
 }
 
 function requestNotificationPermissionFromGesture() {
@@ -378,18 +378,32 @@ function scrollMessagesToBottom() {
   container.scrollTop = container.scrollHeight;
 }
 
+function formatBubbleTime(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  } catch {
+    return '';
+  }
+}
+
 function createMessageEl(msg) {
+  const isSent = msg.sender === userId;
   const wrap = document.createElement('div');
-  wrap.className = `message ${msg.sender === userId ? 'sent' : 'received'}`;
+  wrap.className = `message ${isSent ? 'sent' : 'received'}`;
   wrap.dataset.msgId = String(msg.id);
+
+  if (!isSent) {
+    const senderEl = document.createElement('div');
+    senderEl.className = 'msg-sender';
+    senderEl.textContent = msg.sender;
+    wrap.appendChild(senderEl);
+  }
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
-
-  const header = document.createElement('strong');
-  header.textContent = `${msg.sender}:`;
-
-  bubble.appendChild(header);
 
   if (msg.type === 'image' && msg.imageDataUrl) {
     const safeSrc = sanitizeDataImageSrc(msg.imageDataUrl);
@@ -415,11 +429,14 @@ function createMessageEl(msg) {
     bubble.appendChild(body);
   }
 
-  const ts = document.createElement('div');
-  ts.className = 'timestamp';
-  ts.textContent = new Date(msg.timestamp).toLocaleTimeString();
+  const meta = document.createElement('div');
+  meta.className = 'bubble-meta';
+  const timeSpan = document.createElement('span');
+  timeSpan.className = 'bubble-time';
+  timeSpan.textContent = formatBubbleTime(msg.timestamp);
+  meta.appendChild(timeSpan);
+  bubble.appendChild(meta);
 
-  bubble.appendChild(ts);
   wrap.appendChild(bubble);
   return wrap;
 }
@@ -432,6 +449,7 @@ async function sendMessage() {
   try {
     await gchatAPI.sendMessage(userId, content, 'text', lastMessageTime);
     input.value = '';
+    input.dispatchEvent(new Event('input'));
     scheduleQuickPollAfterSend();
   } catch (e) {
     alert('Send failed: ' + e.message);
@@ -466,6 +484,7 @@ function insertEmoji(ch) {
   input.value = v.slice(0, start) + ch + v.slice(end);
   input.focus();
   input.selectionStart = input.selectionEnd = start + ch.length;
+  input.dispatchEvent(new Event('input'));
 }
 
 function showNotification(msg) {
@@ -505,6 +524,14 @@ async function requestNotificationPermission() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const msgInput = document.getElementById('message-input');
+
+  function resizeComposerTextarea() {
+    msgInput.style.height = 'auto';
+    const maxPx = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize || '16') * 7.5);
+    msgInput.style.height = Math.min(msgInput.scrollHeight, maxPx) + 'px';
+  }
+
+  msgInput.addEventListener('input', resizeComposerTextarea);
 
   msgInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -561,6 +588,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-call-voice').addEventListener('click', openVoiceCall);
   document.getElementById('btn-call-video').addEventListener('click', openVideoCall);
+
+  resizeComposerTextarea();
 
   if (config.repo) initApp();
 });

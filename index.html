@@ -6,7 +6,7 @@
   <title>GChat - Serverless Chat</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/style.css">
-  <meta name="theme-color" content="#25D366">
+  <meta name="theme-color" content="#075e54">
   <meta name="gchat-repo" content="guruprasad9177751846/guruprasad9177751846-gchat">
   <script>
     if ('serviceWorker' in navigator) {
@@ -21,10 +21,18 @@
 </head>
 <body>
   <div id="app">
-    <header>
-      <button type="button" id="settings-btn" class="header-settings" onclick="openSettings()" title="Setup">⚙️</button>
-      <h1>💬 GChat</h1>
-      <div id="status">Connecting...</div>
+    <header class="wa-header" role="banner">
+      <div class="wa-header-toolbar">
+        <div class="wa-header-title-block">
+          <h1 class="wa-app-title">GChat</h1>
+          <p id="status" class="wa-status" aria-live="polite">Connecting…</p>
+        </div>
+        <button type="button" id="settings-btn" class="wa-icon-btn wa-header-actions" onclick="openSettings()" title="Menu &amp; settings" aria-label="Menu and settings">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+          </svg>
+        </button>
+      </div>
     </header>
     
     <div id="config-panel" class="modal">
@@ -52,30 +60,35 @@
       <div id="messages"></div>
 
       <div id="composer-wrap">
-        <div id="composer-toolbar">
-          <button type="button" id="btn-emoji" class="tb-btn" title="Emoji">😊</button>
-          <button type="button" id="btn-gallery" class="tb-btn" data-requires-token="true" title="Photo from gallery">🖼</button>
-          <button type="button" id="btn-camera" class="tb-btn" data-requires-token="true" title="Camera">📷</button>
-          <button type="button" id="btn-call-voice" class="tb-btn tb-btn-call" title="Voice call (Jitsi)">📞</button>
-          <button type="button" id="btn-call-video" class="tb-btn tb-btn-call" title="Video call (Jitsi)">📹</button>
-          <span class="toolbar-hint">Calls open Jitsi — same room name per repo</span>
+        <div id="composer-toolbar" class="wa-toolbar">
+          <button type="button" id="btn-emoji" class="wa-tool-btn" title="Emoji" aria-label="Emoji">😊</button>
+          <button type="button" id="btn-gallery" class="wa-tool-btn" data-requires-token="true" title="Gallery" aria-label="Photo from gallery">🖼</button>
+          <button type="button" id="btn-camera" class="wa-tool-btn" data-requires-token="true" title="Camera" aria-label="Camera">📷</button>
+          <span class="wa-toolbar-divider" aria-hidden="true"></span>
+          <button type="button" id="btn-call-voice" class="wa-tool-btn wa-tool-call" title="Voice call (Jitsi)" aria-label="Voice call">📞</button>
+          <button type="button" id="btn-call-video" class="wa-tool-btn wa-tool-call" title="Video call (Jitsi)" aria-label="Video call">📹</button>
+          <span class="wa-toolbar-hint">Jitsi · same room per repo</span>
         </div>
-        <div id="emoji-panel" aria-hidden="true">
+        <div id="emoji-panel" class="wa-emoji-panel" aria-hidden="true">
           <div id="emoji-grid"></div>
         </div>
 
         <input type="file" id="image-file-input" accept="image/*" hidden>
         <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
 
-        <div id="input-area">
-          <textarea id="message-input" placeholder="Type a message…" maxlength="4000" rows="1"></textarea>
-          <button id="send-btn" type="button" onclick="sendMessage()">Send</button>
+        <div id="input-area" class="wa-input-area">
+          <div class="wa-input-shell">
+            <textarea id="message-input" placeholder="Message" maxlength="4000" rows="1" autocomplete="off" aria-label="Message"></textarea>
+          </div>
+          <button id="send-btn" type="button" class="wa-send-btn" onclick="sendMessage()" aria-label="Send message" title="Send">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
         </div>
       </div>
     </div>
     
-    <div id="notification-perms">
-      <button type="button" onclick="requestNotificationPermission()">Enable Notifications</button>
+    <div id="notification-perms" class="wa-notify-strip">
+      <button type="button" class="wa-notify-btn" onclick="requestNotificationPermission()">Turn on notifications</button>
     </div>
   </div>
 
