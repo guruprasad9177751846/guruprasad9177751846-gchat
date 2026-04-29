@@ -34,6 +34,7 @@ function repoHintFromMetaOrPages() {
   return inferGithubRepoFromPagesUrl();
 }
 
+function sanitizeDataImageSrc(url) {
   if (!url || typeof url !== 'string') return '';
   if (/^data:image\/(jpeg|jpg|png|gif|webp);base64,/.test(url)) return url;
   return '';
@@ -123,9 +124,9 @@ if (repoInputEl && !config.repo) {
 }
 
 if (!config.repo) {
-  configPanel.style.display = 'flex';
+  showConfigModal();
 } else {
-  configPanel.style.display = 'none';
+  hideConfigModal();
 }
 
 function resetChatUiState() {
@@ -136,6 +137,30 @@ function resetChatUiState() {
   if (container) container.innerHTML = '';
 }
 
+async function verifyGithubRepo(repo, token) {
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'GChat-PWA'
+  };
+  const t = String(token || '').trim();
+  if (t) headers.Authorization = `Bearer ${t}`;
+  const res = await fetch(`https://api.github.com/repos/${repo}`, { headers });
+  return res.status;
+}
+
+function hideConfigModal() {
+  configPanel.classList.add('modal-dismissed');
+  configPanel.style.display = 'none';
+  configPanel.setAttribute('aria-hidden', 'true');
+}
+
+function showConfigModal() {
+  configPanel.classList.remove('modal-dismissed');
+  configPanel.style.display = 'flex';
+  configPanel.setAttribute('aria-hidden', 'false');
+}
+
 async function saveConfig() {
   const repoRaw = document.getElementById('repo-input').value.trim();
   const token = document.getElementById('token-input').value.trim();
@@ -144,6 +169,15 @@ async function saveConfig() {
   if (!repo) return alert('Enter the repository (OWNER/repo).');
   if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) {
     return alert('Repository must look like OWNER/repo (or paste a full github.com/… URL).');
+  }
+
+  const seg = repo.split('/');
+  if (seg.length === 2 && seg[0] === seg[1]) {
+    alert(
+      'Invalid repository:\nOWNER and repo name cannot be the same string.\n\nExample:\n' +
+        (repoHintFromMetaOrPages() || 'yourname/your-repo-name')
+    );
+    return;
   }
 
   const pagesOwner = inferGithubPagesOwner();
@@ -169,10 +203,24 @@ async function saveConfig() {
 
   config = { repo, token };
   localStorage.setItem('gchatConfig', JSON.stringify(config));
-  document.getElementById('config-panel').style.display = 'none';
 
+  hideConfigModal();
   resetChatUiState();
-  await initApp();
+
+  try {
+    await initApp();
+  } catch (err) {
+    console.error(err);
+    showConfigModal();
+    alert('Could not start chat: ' + (err && err.message ? err.message : String(err)));
+    return;
+  }
+
+  verifyGithubRepo(repo, token).then(status => {
+    if (status !== 200) {
+      console.warn('[GChat] Repo GET returned HTTP', status, '(messages may still load)');
+    }
+  }).catch(err => console.warn('[GChat] Repo check skipped:', err));
 }
 
 function hasAuthToken() {
@@ -206,7 +254,7 @@ function requestNotificationPermissionFromGesture() {
 function openSettings() {
   document.getElementById('repo-input').value = config.repo || repoHintFromMetaOrPages() || '';
   document.getElementById('token-input').value = config.token ? config.token : '';
-  configPanel.style.display = 'flex';
+  showConfigModal();
 }
 
 function openClassicPatPage() {
@@ -467,6 +515,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-call-video').addEventListener('click', openVideoCall);
 
   if (config.repo) initApp();
+});
+
+/** Inline onclick / cached HTML expects globals on window */
+Object.assign(window, {
+  saveConfig,
+  openSettings,
+  sendMessage,
+  requestNotificationPermission,
+  openClassicPatPage,
+  openFineGrainedPatPage
 });
 
 window.addEventListener('beforeunload', () => {

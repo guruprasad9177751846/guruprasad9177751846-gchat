@@ -121,7 +121,7 @@ header {
   background: white;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
 }
-
+#composer-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -153,7 +153,7 @@ header {
   flex: 1 1 120px;
   line-height: 1.2;
 }
-
+#emoji-panel {
   display: none;
   position: absolute;
   bottom: 100%;
@@ -236,6 +236,11 @@ header {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+}
+
+/* Must beat `.modal { display: flex }` when setup is dismissed */
+#config-panel.modal-dismissed {
+  display: none !important;
 }
 
 .modal-content {
