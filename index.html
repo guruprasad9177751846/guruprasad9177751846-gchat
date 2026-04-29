@@ -28,13 +28,17 @@
         <p class="config-hint">Use <strong>this</strong> repo (<code>yourname/gchat</code>) so messages are stored as Issues here—no separate backend repo.</p>
         <label class="field-label" for="repo-input">Repository</label>
         <input id="repo-input" name="repo" autocomplete="off" placeholder="owner/gchat" value="">
-        <label class="field-label" for="token-input"><abbr title="Personal Access Token">PAT</abbr></label>
-        <input id="token-input" name="pat" type="password" autocomplete="off" placeholder="Paste token once">
-        <p class="pat-explainer"><strong>PAT</strong> is a <em>Personal Access Token</em> from GitHub: a secret so this app can use the GitHub API as <strong>you</strong> (create/read Issues). It is stored only in <strong>your browser</strong>—never baked into the site, because a public token would let anyone hijack your repos.</p>
-        <div class="token-actions">
-          <button type="button" class="btn-link" onclick="openClassicPatPage()">New classic token →</button>
-          <button type="button" class="btn-link" onclick="openFineGrainedPatPage()">New fine‑grained token →</button>
-        </div>
+        <label class="field-label" for="token-input">Token <span class="optional-badge">optional</span></label>
+        <input id="token-input" name="pat" type="password" autocomplete="off" placeholder="Leave blank to browse only">
+        <p class="pat-explainer"><strong>No token:</strong> you can load messages from a <strong>public</strong> repo only (slow polling — GitHub rate limits anonymous reads). <strong>Sending</strong> always requires a token; GitHub’s API never allows anonymous Issue creation.</p>
+        <details class="pat-details">
+          <summary>To send messages — create a token</summary>
+          <p class="pat-explainer">Stored only in this browser.</p>
+          <div class="token-actions">
+            <button type="button" class="btn-link" onclick="openClassicPatPage()">New classic token →</button>
+            <button type="button" class="btn-link" onclick="openFineGrainedPatPage()">New fine‑grained token →</button>
+          </div>
+        </details>
         <button type="button" onclick="saveConfig()">Save & Start</button>
       </div>
     </div>

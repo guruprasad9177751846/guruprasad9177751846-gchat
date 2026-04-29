@@ -182,6 +182,32 @@ header {
   color: #0550ae;
 }
 
+.optional-badge {
+  font-size: 0.75rem;
+  font-weight: normal;
+  opacity: 0.75;
+}
+
+#config-panel .pat-details {
+  font-size: 0.85rem;
+  text-align: left;
+  width: 100%;
+}
+
+#config-panel .pat-details summary {
+  cursor: pointer;
+  color: #0969da;
+  list-style-position: outside;
+}
+
+#config-panel .pat-details .pat-explainer {
+  margin-top: 0.5rem;
+}
+
+#config-panel .pat-details .token-actions {
+  margin-top: 0.35rem;
+}
+
 input[type="password"] {
   width: 100%;
   padding: 0.75rem;
@@ -211,6 +237,7 @@ input[type="password"] {
   #config-panel .pat-explainer { color: #bbb; }
   #config-panel .btn-link { color: #58a6ff; }
   #config-panel .btn-link:hover { color: #79c0ff; }
+  #config-panel .pat-details summary { color: #58a6ff; }
 }
 
 /* Mobile optimizations */

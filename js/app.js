@@ -49,10 +49,16 @@ if (!config.repo) {
 }
 
 async function saveConfig() {
-  const repo = document.getElementById('repo-input').value.trim();
+  const repoRaw = document.getElementById('repo-input').value.trim();
   const token = document.getElementById('token-input').value.trim();
+  const repo = typeof normalizeGithubRepo === 'function' ? normalizeGithubRepo(repoRaw) : repoRaw;
 
-  if (!repo || !token) return alert('Enter repo and token!');
+  if (!repo) return alert('Enter the repository (OWNER/repo).');
+  if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) {
+    return alert('Repository must look like OWNER/repo (or paste a full github.com/… URL).');
+  }
+
+  document.getElementById('repo-input').value = repo;
 
   // Must run in the same user gesture as the button click — before any await — or browsers block the prompt.
   requestNotificationPermissionFromGesture();
@@ -62,6 +68,21 @@ async function saveConfig() {
   document.getElementById('config-panel').style.display = 'none';
 
   await initApp();
+}
+
+function hasAuthToken() {
+  return !!(config.token && String(config.token).trim());
+}
+
+function applyUiMode() {
+  const authed = hasAuthToken();
+  const sendBtn = document.getElementById('send-btn');
+  const msgInput = document.getElementById('message-input');
+  sendBtn.disabled = !authed;
+  msgInput.disabled = !authed;
+  msgInput.placeholder = authed
+    ? 'Type a message...'
+    : 'Sending needs a token — GitHub requires login to create Issues';
 }
 
 /** Call synchronously from Save & Start click only (preserves gesture). */
@@ -81,12 +102,19 @@ function openFineGrainedPatPage() {
 
 async function initApp() {
   gchatAPI = new GitHubAPI(config.repo, config.token);
-  document.getElementById('status').textContent = 'Connected';
+  document.getElementById('status').textContent = hasAuthToken()
+    ? 'Connected'
+    : 'Read-only · no token (~60 API calls/hour)';
+  applyUiMode();
   startPolling();
 }
 
 function startPolling() {
-  pollingInterval = setInterval(async () => {
+  clearInterval(pollingInterval);
+  /** Anonymous GitHub API is capped ~60 requests/hour per IP — poll slowly without a token. */
+  const pollMs = hasAuthToken() ? 2000 : 65000;
+
+  const tick = async () => {
     const newMessages = await gchatAPI.fetchNewMessages(lastMessageTime);
     if (newMessages.length > 0) {
       messages = [...messages, ...newMessages.filter(m => !messages.some(existing => existing.id === m.id))];
@@ -96,7 +124,10 @@ function startPolling() {
         if (msg.sender !== userId) showNotification(msg);
       });
     }
-  }, 2000); // 2s poll
+  };
+
+  tick();
+  pollingInterval = setInterval(tick, pollMs);
 }
 
 function renderMessages() {
