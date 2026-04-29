@@ -118,6 +118,10 @@ let lastMessageTime = null;
 let pollingInterval;
 const renderedIds = new Set();
 
+/** Authenticated ~3.6k req/h — under GitHub REST 5k/h. Anon ~60 req/h IP limit → ~65s spacing. */
+const POLL_MS_AUTH = 1000;
+const POLL_MS_ANON = 65000;
+
 let userId = localStorage.getItem('userId');
 if (!userId) {
   userId = 'guest-' + Math.random().toString(36).slice(2, 10);
@@ -301,15 +305,11 @@ function openVideoCall() {
 async function initApp() {
   gchatAPI = new GitHubAPI(config.repo, config.token);
   document.getElementById('status').textContent = hasAuthToken()
-    ? 'Connected'
-    : 'Read-only · no token (~60 API calls/hour)';
+    ? `Connected · refresh ~${POLL_MS_AUTH / 1000}s`
+    : `Read-only · refresh ~${Math.round(POLL_MS_ANON / 1000)}s — add GitHub token (⚙️) for ~1s`;
   applyUiMode();
   startPolling();
 }
-
-/** Authenticated ~3.6k req/h — under GitHub REST 5k/h. Anon stays ~1/min to respect 60/h IP limit. */
-const POLL_MS_AUTH = 1000;
-const POLL_MS_ANON = 65000;
 
 async function pollMessagesOnce() {
   const fetched = await gchatAPI.fetchNewMessages(lastMessageTime);

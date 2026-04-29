@@ -64,10 +64,16 @@ class GitHubAPI {
 
   async fetchNewMessages(since = null) {
     try {
-      let url = this.baseURL + '?sort=created&direction=asc&state=open&per_page=20';
-      if (since) url += `&since=${since}`;
+      // desc + larger page: newest issues first (asc would return oldest 20 when many land between polls).
+      let url =
+        this.baseURL + '?sort=created&direction=desc&state=open&per_page=40';
+      if (since) url += `&since=${encodeURIComponent(since)}`;
 
-      const response = await fetch(url, { headers: this.headers });
+      // GitHub often sends Cache-Control: max-age=60 — without no-store browsers can reuse JSON for ~1 min.
+      const response = await fetch(url, {
+        headers: this.headers,
+        cache: 'no-store'
+      });
       if (!response.ok) {
         const msg = await readApiError(response);
         console.warn('Issues API:', msg);
