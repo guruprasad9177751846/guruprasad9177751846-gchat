@@ -108,6 +108,7 @@ const COMMON_EMOJIS = [
   window.saveConfig = saveConfig;
   window.openSettings = openSettings;
   window.sendMessage = sendMessage;
+  window.loadOlderMessages = loadOlderMessages;
   window.requestNotificationPermission = requestNotificationPermission;
   window.openClassicPatPage = openClassicPatPage;
   window.openFineGrainedPatPage = openFineGrainedPatPage;
@@ -117,6 +118,13 @@ let messages = [];
 let lastMessageTime = null;
 let pollingInterval;
 const renderedIds = new Set();
+
+/** Older-than-window chat rows already fetched but not shown yet (sorted ascending by issue #). */
+let olderBacklog = [];
+/** Next GitHub Issues API page to fetch for history older than the current oldest visible issue. */
+let nextOlderGithubPage = null;
+let loadingOlder = false;
+const CHUNK_OLDER = 40;
 
 /** Authenticated ~3.6k req/h — under GitHub REST 5k/h. Anon ~60 req/h IP limit → ~65s spacing. */
 const POLL_MS_AUTH = 1000;
@@ -151,9 +159,14 @@ if (configPanel) {
 function resetChatUiState() {
   messages = [];
   lastMessageTime = null;
+  olderBacklog = [];
+  nextOlderGithubPage = null;
   renderedIds.clear();
   const container = document.getElementById('messages');
-  if (container) container.innerHTML = '';
+  if (!container) return;
+  container.querySelectorAll('.message').forEach(n => n.remove());
+  const row = document.getElementById('load-older-row');
+  if (row) row.hidden = true;
 }
 
 async function verifyGithubRepo(repo, token) {
@@ -325,8 +338,112 @@ async function initApp() {
     ? `Connected · refresh ~${POLL_MS_AUTH / 1000}s`
     : `Read-only · ~${Math.round(POLL_MS_ANON / 1000)}s between polls — save token (⚙️) for ~1s`;
   applyUiMode();
+  await bootstrapInitialMessages();
   startPolling();
   bindWakePollingOnce();
+}
+
+async function bootstrapInitialMessages() {
+  try {
+    const res = await gchatAPI.fetchInitialWindow(100);
+    messages = res.visibleMessages;
+    olderBacklog = res.backlog;
+    nextOlderGithubPage = res.nextOlderPage;
+    renderedIds.clear();
+    document.querySelectorAll('#messages .message').forEach(n => n.remove());
+    appendNewMessagesOnly(messages.slice());
+    lastMessageTime = messages.length ? messages[messages.length - 1].timestamp : null;
+    updateLoadOlderUi();
+  } catch (e) {
+    console.error('[GChat] bootstrap:', e);
+  }
+}
+
+function updateLoadOlderUi() {
+  const row = document.getElementById('load-older-row');
+  if (!row) return;
+  row.hidden = !(olderBacklog.length > 0 || nextOlderGithubPage != null);
+}
+
+function prependOlderMessagesDom(batchAsc) {
+  if (!batchAsc.length) return;
+  const container = document.getElementById('messages');
+  const sentinel = document.getElementById('chat-empty-hint');
+  const prev = container.scrollHeight;
+  const insertBefore =
+    sentinel && sentinel.parentNode === container ? sentinel : container.firstChild;
+
+  for (let i = batchAsc.length - 1; i >= 0; i--) {
+    const msg = batchAsc[i];
+    if (renderedIds.has(msg.id)) continue;
+    renderedIds.add(msg.id);
+    container.insertBefore(createMessageEl(msg), insertBefore);
+  }
+
+  for (const msg of batchAsc) {
+    if (!messages.some(x => x.id === msg.id)) messages.push(msg);
+  }
+  messages.sort((a, b) => a.id - b.id);
+
+  container.scrollTop += container.scrollHeight - prev;
+}
+
+async function loadOlderMessages() {
+  if (loadingOlder) return;
+  loadingOlder = true;
+  const btn = document.getElementById('btn-load-older');
+  if (btn) btn.disabled = true;
+  try {
+    if (olderBacklog.length > 0) {
+      const take = Math.min(CHUNK_OLDER, olderBacklog.length);
+      const chunk = olderBacklog.splice(olderBacklog.length - take, take);
+      prependOlderMessagesDom(chunk);
+      updateLoadOlderUi();
+      return;
+    }
+
+    if (nextOlderGithubPage == null) {
+      updateLoadOlderUi();
+      return;
+    }
+
+    const oldestVis = messages.length ? messages[0].id : Infinity;
+
+    let p = nextOlderGithubPage;
+    for (let guard = 0; p != null && guard < 25; guard++) {
+      const { messages: batch, hasMorePages } = await gchatAPI.fetchOlderIssuesPage(p);
+      const older = batch.filter(m => m.id < oldestVis).sort((a, b) => a.id - b.id);
+
+      if (older.length > 0) {
+        let chunk;
+        if (older.length > CHUNK_OLDER) {
+          olderBacklog = older.slice(0, older.length - CHUNK_OLDER).concat(olderBacklog);
+          chunk = older.slice(-CHUNK_OLDER);
+        } else {
+          chunk = older;
+        }
+
+        prependOlderMessagesDom(chunk);
+        nextOlderGithubPage = hasMorePages ? p + 1 : null;
+        updateLoadOlderUi();
+        return;
+      }
+
+      if (!hasMorePages) {
+        nextOlderGithubPage = null;
+        updateLoadOlderUi();
+        return;
+      }
+
+      p++;
+    }
+
+    nextOlderGithubPage = null;
+    updateLoadOlderUi();
+  } finally {
+    loadingOlder = false;
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function pollMessagesOnce() {
@@ -365,10 +482,16 @@ function startPolling() {
 
 function appendNewMessagesOnly(toAppend) {
   const container = document.getElementById('messages');
+  const sentinel = document.getElementById('chat-empty-hint');
   for (const msg of toAppend) {
     if (renderedIds.has(msg.id)) continue;
     renderedIds.add(msg.id);
-    container.appendChild(createMessageEl(msg));
+    const el = createMessageEl(msg);
+    if (sentinel && sentinel.parentNode === container) {
+      container.insertBefore(el, sentinel);
+    } else {
+      container.appendChild(el);
+    }
   }
   scrollMessagesToBottom();
 }

@@ -147,11 +147,9 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='%23000' fill-opacity='0.035'%3E%3Ccircle cx='8' cy='8' r='1'/%3E%3Ccircle cx='38' cy='38' r='1'/%3E%3Ccircle cx='22' cy='52' r='1'/%3E%3Ccircle cx='52' cy='14' r='1'/%3E%3C/g%3E%3C/svg%3E");
 }
 
-#messages:empty::before {
-  content: 'Messages are end-to-end human-readable (GitHub Issues). Say hi below.';
-  display: block;
+.wa-chat-empty-hint {
+  margin: 2rem auto 1rem;
   max-width: 16rem;
-  margin: 2.5rem auto 0;
   padding: 1rem 1.15rem;
   text-align: center;
   font-size: 0.85rem;
@@ -160,6 +158,41 @@ body {
   background: rgba(255, 255, 255, 0.55);
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+#messages:has(.message) .wa-chat-empty-hint {
+  display: none;
+}
+
+.wa-load-older-row {
+  display: flex;
+  justify-content: center;
+  padding: 0.35rem 0 0.45rem;
+}
+
+.wa-load-older-row[hidden] {
+  display: none !important;
+}
+
+.wa-load-older-btn {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #027eb5;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 1.25rem;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.wa-load-older-btn:hover:not(:disabled) {
+  background: #fff;
+}
+
+.wa-load-older-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 /* —— Message rows —— */
@@ -621,9 +654,18 @@ input[type='password'] {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Ccircle cx='8' cy='8' r='1'/%3E%3Ccircle cx='38' cy='38' r='1'/%3E%3Ccircle cx='22' cy='52' r='1'/%3E%3Ccircle cx='52' cy='14' r='1'/%3E%3C/g%3E%3C/svg%3E");
   }
 
-  #messages:empty::before {
-    background: rgba(31, 44, 52, 0.9);
+  .wa-chat-empty-hint {
+    background: rgba(31, 44, 52, 0.92);
     color: var(--wa-meta);
+  }
+
+  .wa-load-older-btn {
+    background: rgba(42, 57, 66, 0.95);
+    color: #53bdeb;
+  }
+
+  .wa-load-older-btn:hover:not(:disabled) {
+    background: rgba(53, 68, 77, 0.98);
   }
 
   .msg-sender {

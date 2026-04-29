@@ -57,7 +57,12 @@
     </div>
     
     <div id="chat-container">
-      <div id="messages"></div>
+      <div id="messages" class="wa-messages-scroll">
+        <div id="load-older-row" class="wa-load-older-row" hidden>
+          <button type="button" id="btn-load-older" class="wa-load-older-btn" onclick="loadOlderMessages()">Load older messages</button>
+        </div>
+        <p id="chat-empty-hint" class="wa-chat-empty-hint">No messages yet — say hi below.</p>
+      </div>
 
       <div id="composer-wrap">
         <div id="composer-toolbar" class="wa-toolbar">

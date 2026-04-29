@@ -62,43 +62,118 @@ class GitHubAPI {
     this.headers = githubRestHeaders(this.token);
   }
 
-  /** Latest repo issues that are chat rows (pull requests excluded). */
-  async fetchNewMessages() {
-    try {
-      const params =
-        '?sort=created&direction=desc&state=all&per_page=100';
-      let url = this.baseURL + params;
+  _issueQueryParams() {
+    return '?sort=created&direction=desc&state=all&per_page=100';
+  }
 
-      const response = await fetch(url, {
-        headers: {
-          ...this.headers,
-          'Cache-Control': 'no-cache',
-          Pragma: 'no-cache'
-        },
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        const msg = await readApiError(response);
-        console.warn('Issues API:', msg);
+  async _fetchIssuesPage(pageNum) {
+    const url = `${this.baseURL}${this._issueQueryParams()}&page=${pageNum}`;
+    const response = await fetch(url, {
+      headers: {
+        ...this.headers,
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache'
+      },
+      cache: 'no-store'
+    });
+    const link = response.headers.get('Link');
+    let issues = [];
+    if (response.ok) {
+      const data = await response.json();
+      issues = Array.isArray(data) ? data : [];
+    }
+    return { ok: response.ok, issues, link };
+  }
+
+  _linkHasNext(linkHeader) {
+    return !!(linkHeader && /rel="next"/.test(linkHeader));
+  }
+
+  _issuesToMessages(issues) {
+    const byNumber = new Map();
+    const filtered = Array.isArray(issues) ? issues.filter(issue => !issue.pull_request) : [];
+    for (const issue of filtered) {
+      const m = this._issueToMessage(issue);
+      if (!this._messageVisible(m)) continue;
+      byNumber.set(m.id, m);
+    }
+    return Array.from(byNumber.values()).sort((a, b) => a.id - b.id);
+  }
+
+  /** Page 1 only — for polling new messages (newest issue rows). */
+  async fetchLatestChatMessagesForPoll() {
+    try {
+      const { ok, issues, link } = await this._fetchIssuesPage(1);
+      if (!ok) {
+        if (!issues.length) console.warn('Issues API: poll failed');
         return [];
       }
-
-      let issues = await response.json();
-      issues = Array.isArray(issues) ? issues : [];
-
-      issues = issues.filter(issue => !issue.pull_request);
-
-      const byNumber = new Map();
-      for (const issue of issues) {
-        const m = this._issueToMessage(issue);
-        if (!this._messageVisible(m)) continue;
-        byNumber.set(m.id, m);
-      }
-      return Array.from(byNumber.values()).sort((a, b) => a.id - b.id);
+      return this._issuesToMessages(issues);
     } catch (error) {
       console.error('Fetch error:', error);
       return [];
     }
+  }
+
+  /**
+   * Walk GitHub pages until we have ≥ maxVisible chat rows or run out of pages.
+   * Returns newest `maxVisible` messages, older ones in backlog, and next API page # for older history.
+   */
+  async fetchInitialWindow(maxVisible = 100) {
+    const byId = new Map();
+    let page = 1;
+    let lastLink = '';
+    const MAX_PAGES = 40;
+
+    for (; page <= MAX_PAGES; page++) {
+      const { ok, issues, link } = await this._fetchIssuesPage(page);
+      lastLink = link || '';
+      if (!ok) break;
+      if (!issues.length) break;
+
+      for (const m of this._issuesToMessages(issues)) {
+        byId.set(m.id, m);
+      }
+
+      if (byId.size >= maxVisible || !this._linkHasNext(lastLink)) break;
+    }
+
+    const merged = Array.from(byId.values()).sort((a, b) => a.id - b.id);
+    let backlog = [];
+    let visible = merged;
+    if (merged.length > maxVisible) {
+      backlog = merged.slice(0, merged.length - maxVisible);
+      visible = merged.slice(-maxVisible);
+    }
+
+    const nextOlderPage = this._linkHasNext(lastLink) ? page + 1 : null;
+
+    return {
+      visibleMessages: visible,
+      backlog,
+      nextOlderPage
+    };
+  }
+
+  /** One GitHub Issues page (older rows); caller passes incremental page number. */
+  async fetchOlderIssuesPage(apiPage) {
+    try {
+      const { ok, issues, link } = await this._fetchIssuesPage(apiPage);
+      if (!ok) return { messages: [], hasMorePages: false };
+      const messages = this._issuesToMessages(issues);
+      return {
+        messages,
+        hasMorePages: this._linkHasNext(link)
+      };
+    } catch (error) {
+      console.error('Older page fetch:', error);
+      return { messages: [], hasMorePages: false };
+    }
+  }
+
+  /** Back-compat name used by older app versions — delegates to poll helper. */
+  async fetchNewMessages() {
+    return this.fetchLatestChatMessagesForPoll();
   }
 
   _issueToMessage(issue) {
