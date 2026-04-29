@@ -6,8 +6,11 @@ let userId = localStorage.getItem('userId') || prompt('Your User ID (e.g., user1
 localStorage.setItem('userId', userId);
 
 let config = JSON.parse(localStorage.getItem('gchatConfig') || '{}');
+const configPanel = document.getElementById('config-panel');
 if (!config.repo) {
-  document.getElementById('config-panel').style.display = 'flex';
+  configPanel.style.display = 'flex';
+} else {
+  configPanel.style.display = 'none';
 }
 
 async function saveConfig() {

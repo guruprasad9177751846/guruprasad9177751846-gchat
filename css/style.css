@@ -14,6 +14,13 @@ body {
   color: #000;
 }
 
+#app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 header {
   background: #075e54;
   color: white;

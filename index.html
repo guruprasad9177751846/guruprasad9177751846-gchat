@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#25D366">
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register(new URL('./sw.js', window.location.href), { scope: './' });
     }
   </script>
 </head>

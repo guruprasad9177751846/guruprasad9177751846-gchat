@@ -1,11 +1,12 @@
-// Service Worker for PWA caching & background sync
-const CACHE_NAME = 'gchat-v1';
+// Service Worker for PWA caching & background sync (works on GitHub Pages /repo/ paths)
+const CACHE_NAME = 'gchat-v2';
+const BASE = new URL('./', self.location.href).href;
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/app.js',
-  '/js/github-api.js'
+  BASE,
+  new URL('index.html', BASE).href,
+  new URL('css/style.css', BASE).href,
+  new URL('js/app.js', BASE).href,
+  new URL('js/github-api.js', BASE).href
 ];
 
 self.addEventListener('install', event => {
@@ -25,7 +26,7 @@ self.addEventListener('fetch', event => {
 // Background notifications (periodic sync)
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  event.waitUntil(clients.openWindow('/'));
+  event.waitUntil(clients.openWindow(BASE));
 });
 
 // Push (future)

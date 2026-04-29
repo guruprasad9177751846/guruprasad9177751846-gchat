@@ -2,7 +2,7 @@
   "name": "GChat - Serverless Real-time Chat",
   "short_name": "GChat",
   "description": "WhatsApp-like chat using GitHub backend. Works offline, notifications.",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#25D366",
