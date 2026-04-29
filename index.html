@@ -45,14 +45,32 @@
     
     <div id="chat-container">
       <div id="messages"></div>
-      <div id="input-area">
-        <input id="message-input" placeholder="Type a message..." maxlength="500">
-        <button id="send-btn" onclick="sendMessage()">Send</button>
+
+      <div id="composer-wrap">
+        <div id="composer-toolbar">
+          <button type="button" id="btn-emoji" class="tb-btn" title="Emoji">😊</button>
+          <button type="button" id="btn-gallery" class="tb-btn" data-requires-token="true" title="Photo from gallery">🖼</button>
+          <button type="button" id="btn-camera" class="tb-btn" data-requires-token="true" title="Camera">📷</button>
+          <button type="button" id="btn-call-voice" class="tb-btn tb-btn-call" title="Voice call (Jitsi)">📞</button>
+          <button type="button" id="btn-call-video" class="tb-btn tb-btn-call" title="Video call (Jitsi)">📹</button>
+          <span class="toolbar-hint">Calls open Jitsi — same room name per repo</span>
+        </div>
+        <div id="emoji-panel" aria-hidden="true">
+          <div id="emoji-grid"></div>
+        </div>
+
+        <input type="file" id="image-file-input" accept="image/*" hidden>
+        <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+
+        <div id="input-area">
+          <textarea id="message-input" placeholder="Type a message…" maxlength="4000" rows="1"></textarea>
+          <button id="send-btn" type="button" onclick="sendMessage()">Send</button>
+        </div>
       </div>
     </div>
     
     <div id="notification-perms">
-      <button onclick="requestNotificationPermission()">Enable Notifications</button>
+      <button type="button" onclick="requestNotificationPermission()">Enable Notifications</button>
     </div>
   </div>
 
@@ -60,4 +78,3 @@
   <script src="js/app.js"></script>
 </body>
 </html>
-

@@ -1,5 +1,5 @@
 // Service Worker for PWA caching & background sync (works on GitHub Pages /repo/ paths)
-const CACHE_NAME = 'gchat-v8';
+const CACHE_NAME = 'gchat-v9';
 const BASE = new URL('./', self.location.href).href;
 const urlsToCache = [
   BASE,

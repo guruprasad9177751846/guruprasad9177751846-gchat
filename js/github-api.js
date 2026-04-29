@@ -75,28 +75,59 @@ class GitHubAPI {
       }
 
       const issues = await response.json();
-      return issues.map(issue => {
-        let body = {};
-        try {
-          body = JSON.parse(issue.body || '{}');
-        } catch {
-          body = {};
-        }
-        const content = body.content ?? issue.body;
-        return {
-          id: issue.number,
-          sender: body.sender_id || 'Unknown',
-          timestamp: issue.created_at,
-          content,
-          type: body.type || 'text'
-        };
-      }).filter(msg => msg.content);
+      return issues.map(issue => this._issueToMessage(issue)).filter(m => this._messageVisible(m));
     } catch (error) {
       console.error('Fetch error:', error);
       return [];
     }
   }
 
+  _issueToMessage(issue) {
+    let body = {};
+    try {
+      body = JSON.parse(issue.body || '{}');
+    } catch {
+      body = {};
+    }
+    const type = body.type || 'text';
+    const sender = body.sender_id || 'Unknown';
+    const timestamp = issue.created_at;
+    const id = issue.number;
+
+    if (type === 'image' && body.imageData) {
+      const mime = body.imageMime || 'image/jpeg';
+      const imageDataUrl = body.imageData.startsWith('data:')
+        ? body.imageData
+        : `data:${mime};base64,${body.imageData}`;
+      return {
+        id,
+        sender,
+        timestamp,
+        type: 'image',
+        content: typeof body.content === 'string' ? body.content : '',
+        imageDataUrl
+      };
+    }
+
+    const content =
+      typeof body.content === 'string' ? body.content : issue.body && !issue.body.startsWith('{') ? issue.body : '';
+
+    return {
+      id,
+      sender,
+      timestamp,
+      type: 'text',
+      content,
+      imageDataUrl: null
+    };
+  }
+
+  _messageVisible(msg) {
+    if (msg.type === 'image') return !!msg.imageDataUrl;
+    return msg.content !== undefined && String(msg.content).length > 0;
+  }
+
+  /** Send plain text chat message */
   async sendMessage(sender, content, type = 'text', previousId = null) {
     if (!this.canPost) {
       throw new Error(
@@ -111,6 +142,40 @@ class GitHubAPI {
       type,
       previous_msg_id: previousId
     };
+    return this._postIssue(sender, msgObj);
+  }
+
+  /**
+   * Send image (compressed JPEG base64 without data: prefix stored in JSON body).
+   * GitHub issue body ~65k limit — caller must compress.
+   */
+  async sendImage(sender, caption, jpegDataUrl, previousId = null) {
+    if (!this.canPost) {
+      throw new Error(
+        'GitHub does not allow creating Issues without authentication. Add an optional token to send messages.'
+      );
+    }
+
+    const base64 = jpegDataUrl.includes(',') ? jpegDataUrl.split(',')[1] : jpegDataUrl;
+    const msgObj = {
+      sender_id: sender,
+      timestamp: new Date().toISOString(),
+      type: 'image',
+      content: caption || '',
+      imageMime: 'image/jpeg',
+      imageData: base64,
+      previous_msg_id: previousId
+    };
+
+    const bodyStr = JSON.stringify(msgObj);
+    if (bodyStr.length > 55000) {
+      throw new Error('Image still too large after compression — try a smaller photo.');
+    }
+
+    return this._postIssue(sender, msgObj);
+  }
+
+  async _postIssue(sender, msgObj) {
     const title = `Chat: ${sender}-${Date.now()}`;
 
     const response = await fetch(this.baseURL, {
