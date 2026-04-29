@@ -62,13 +62,13 @@ class GitHubAPI {
     this.headers = githubRestHeaders(this.token);
   }
 
-  /** Pull latest issues (no `since` filter — avoids missing brand‑new issues next to timestamp boundaries). */
+  /** Latest repo issues that are chat rows (pull requests excluded). */
   async fetchNewMessages() {
     try {
-      let url =
-        this.baseURL + '?sort=created&direction=desc&state=open&per_page=40';
+      const params =
+        '?sort=created&direction=desc&state=all&per_page=100';
+      let url = this.baseURL + params;
 
-      // Bypass HTTP caches (GitHub often sends max-age=60 on responses).
       const response = await fetch(url, {
         headers: {
           ...this.headers,
@@ -83,8 +83,18 @@ class GitHubAPI {
         return [];
       }
 
-      const issues = await response.json();
-      return issues.map(issue => this._issueToMessage(issue)).filter(m => this._messageVisible(m));
+      let issues = await response.json();
+      issues = Array.isArray(issues) ? issues : [];
+
+      issues = issues.filter(issue => !issue.pull_request);
+
+      const byNumber = new Map();
+      for (const issue of issues) {
+        const m = this._issueToMessage(issue);
+        if (!this._messageVisible(m)) continue;
+        byNumber.set(m.id, m);
+      }
+      return Array.from(byNumber.values()).sort((a, b) => a.id - b.id);
     } catch (error) {
       console.error('Fetch error:', error);
       return [];
