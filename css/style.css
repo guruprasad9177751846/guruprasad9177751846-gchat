@@ -127,12 +127,76 @@ header {
   width: 90%;
 }
 
+#config-panel .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+#config-panel .config-hint {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin: 0;
+  text-align: left;
+  line-height: 1.4;
+}
+
+#config-panel .config-hint code {
+  font-size: 0.8rem;
+}
+
+#config-panel .field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  align-self: flex-start;
+}
+
+#config-panel .pat-explainer {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+  text-align: left;
+  color: #444;
+}
+
+#config-panel .token-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  justify-content: flex-start;
+}
+
+#config-panel .btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  color: #0969da;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+#config-panel .btn-link:hover {
+  color: #0550ae;
+}
+
 input[type="password"] {
   width: 100%;
   padding: 0.75rem;
   margin: 0.5rem 0;
   border: 1px solid #ddd;
   border-radius: 0.5rem;
+}
+
+#config-panel #repo-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  font-size: 1rem;
 }
 
 @keyframes slideIn {
@@ -144,6 +208,9 @@ input[type="password"] {
 @media (prefers-color-scheme: dark) {
   body { background: #1c1c1e; color: #fff; }
   .message.received .bubble { background: #2a2a2e; }
+  #config-panel .pat-explainer { color: #bbb; }
+  #config-panel .btn-link { color: #58a6ff; }
+  #config-panel .btn-link:hover { color: #79c0ff; }
 }
 
 /* Mobile optimizations */

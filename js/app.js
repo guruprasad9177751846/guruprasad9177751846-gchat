@@ -1,12 +1,47 @@
 // Main App Logic: Polling, UI, Notifications
+
+/** GitHub Pages project sites: https://OWNER.github.io/REPO/ → OWNER/REPO */
+function inferGithubRepoFromPagesUrl() {
+  try {
+    const { hostname, pathname } = window.location;
+    const gh = /^([^.]+)\.github\.io$/i.exec(hostname);
+    if (!gh) return '';
+    const owner = gh[1];
+    const segments = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    if (segments.length >= 1) {
+      const repo = segments[0];
+      if (/^[a-zA-Z0-9_.-]+$/.test(repo)) return `${owner}/${repo}`;
+    }
+    // User/org site root → repo is typically OWNER.github.io
+    return `${owner}/${owner}.github.io`;
+  } catch {
+    return '';
+  }
+}
+
+function repoHintFromMetaOrPages() {
+  const meta = document.querySelector('meta[name="gchat-repo"]')?.getAttribute('content')?.trim();
+  if (meta) return meta;
+  return inferGithubRepoFromPagesUrl();
+}
+
 let messages = [];
 let lastMessageTime = null;
 let pollingInterval;
-let userId = localStorage.getItem('userId') || prompt('Your User ID (e.g., user1):') || 'Anonymous';
-localStorage.setItem('userId', userId);
+let userId = localStorage.getItem('userId');
+if (!userId) {
+  userId = 'guest-' + Math.random().toString(36).slice(2, 10);
+  localStorage.setItem('userId', userId);
+}
 
 let config = JSON.parse(localStorage.getItem('gchatConfig') || '{}');
 const configPanel = document.getElementById('config-panel');
+const repoInputEl = document.getElementById('repo-input');
+if (repoInputEl && !config.repo) {
+  const guessed = repoHintFromMetaOrPages();
+  if (guessed) repoInputEl.value = guessed;
+}
+
 if (!config.repo) {
   configPanel.style.display = 'flex';
 } else {
@@ -14,8 +49,8 @@ if (!config.repo) {
 }
 
 async function saveConfig() {
-  const repo = document.getElementById('repo-input').value;
-  const token = document.getElementById('token-input').value;
+  const repo = document.getElementById('repo-input').value.trim();
+  const token = document.getElementById('token-input').value.trim();
   
   if (!repo || !token) return alert('Enter repo and token!');
   
@@ -24,6 +59,14 @@ async function saveConfig() {
   document.getElementById('config-panel').style.display = 'none';
   
   await initApp();
+}
+
+function openClassicPatPage() {
+  window.open('https://github.com/settings/tokens/new', '_blank', 'noopener,noreferrer');
+}
+
+function openFineGrainedPatPage() {
+  window.open('https://github.com/settings/personal-access-tokens/new', '_blank', 'noopener,noreferrer');
 }
 
 async function initApp() {
