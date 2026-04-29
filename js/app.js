@@ -307,31 +307,42 @@ async function initApp() {
   startPolling();
 }
 
+/** Authenticated ~3.6k req/h — under GitHub REST 5k/h. Anon stays ~1/min to respect 60/h IP limit. */
+const POLL_MS_AUTH = 1000;
+const POLL_MS_ANON = 65000;
+
+async function pollMessagesOnce() {
+  const fetched = await gchatAPI.fetchNewMessages(lastMessageTime);
+  const incoming = [];
+  for (const m of fetched) {
+    if (!messages.some(x => x.id === m.id)) {
+      messages.push(m);
+      incoming.push(m);
+    }
+  }
+  messages.sort((a, b) => a.id - b.id);
+  if (incoming.length === 0) return;
+
+  appendNewMessagesOnly(incoming);
+  lastMessageTime = messages[messages.length - 1].timestamp;
+  incoming.forEach(msg => {
+    if (msg.sender !== userId) showNotification(msg);
+  });
+}
+
+/** Issue list can lag briefly after POST; burst helps your message and others’ show up sooner. */
+function scheduleQuickPollAfterSend() {
+  void pollMessagesOnce();
+  setTimeout(() => void pollMessagesOnce(), 350);
+  setTimeout(() => void pollMessagesOnce(), 900);
+}
+
 function startPolling() {
   clearInterval(pollingInterval);
-  const pollMs = hasAuthToken() ? 2000 : 65000;
+  const pollMs = hasAuthToken() ? POLL_MS_AUTH : POLL_MS_ANON;
 
-  const tick = async () => {
-    const fetched = await gchatAPI.fetchNewMessages(lastMessageTime);
-    const incoming = [];
-    for (const m of fetched) {
-      if (!messages.some(x => x.id === m.id)) {
-        messages.push(m);
-        incoming.push(m);
-      }
-    }
-    messages.sort((a, b) => a.id - b.id);
-    if (incoming.length === 0) return;
-
-    appendNewMessagesOnly(incoming);
-    lastMessageTime = messages[messages.length - 1].timestamp;
-    incoming.forEach(msg => {
-      if (msg.sender !== userId) showNotification(msg);
-    });
-  };
-
-  tick();
-  pollingInterval = setInterval(tick, pollMs);
+  void pollMessagesOnce();
+  pollingInterval = setInterval(() => void pollMessagesOnce(), pollMs);
 }
 
 function appendNewMessagesOnly(toAppend) {
@@ -403,6 +414,7 @@ async function sendMessage() {
   try {
     await gchatAPI.sendMessage(userId, content, 'text', lastMessageTime);
     input.value = '';
+    scheduleQuickPollAfterSend();
   } catch (e) {
     alert('Send failed: ' + e.message);
   }
@@ -417,6 +429,7 @@ async function handleImageSelected(file) {
   try {
     const jpeg = await compressImageFile(file);
     await gchatAPI.sendImage(userId, '', jpeg, lastMessageTime);
+    scheduleQuickPollAfterSend();
   } catch (e) {
     alert(e.message || String(e));
   }
