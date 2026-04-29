@@ -1,0 +1,22 @@
+{
+  "name": "GChat - Serverless Real-time Chat",
+  "short_name": "GChat",
+  "description": "WhatsApp-like chat using GitHub backend. Works offline, notifications.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#25D366",
+  "icons": [
+    {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA... (placeholder 192x192 WhatsApp icon base64)",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+"src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
