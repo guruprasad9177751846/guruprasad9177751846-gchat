@@ -35,7 +35,7 @@
         <input id="repo-input" name="repo" autocomplete="off" placeholder="guruprasad9177751846/guruprasad9177751846-gchat" value="">
         <label class="field-label" for="token-input">Token <span class="optional-badge">optional</span></label>
         <input id="token-input" name="pat" type="password" autocomplete="off" placeholder="Leave blank to browse only">
-        <p class="pat-explainer"><strong>No token:</strong> you can load messages from a <strong>public</strong> repo only (slow polling — GitHub rate limits anonymous reads). <strong>Sending</strong> always requires a token; GitHub’s API never allows anonymous Issue creation.</p>
+        <p class="pat-explainer"><strong>No token:</strong> public repo read‑only (~60 requests/hour → often ~30–60s before new messages appear). <strong>Everyone who wants chat to feel instant should save a token here</strong> — same PAT works for send + fast receive (~1s). Sending always requires a token.</p>
         <details class="pat-details">
           <summary>To send messages — create a token</summary>
           <p class="pat-explainer">Stored only in this browser.</p>

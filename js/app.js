@@ -302,17 +302,35 @@ function openVideoCall() {
   window.open(`https://meet.jit.si/${encodeURIComponent(room)}#config.prejoinPageEnabled=false`, '_blank', 'noopener,noreferrer');
 }
 
+let wakePollingBound = false;
+
+/** Poll right away when tab wakes — timers are throttled in background tabs / battery saver. */
+function bindWakePollingOnce() {
+  if (wakePollingBound) return;
+  wakePollingBound = true;
+  const burst = () => {
+    if (document.visibilityState === 'visible') void pollMessagesOnce();
+  };
+  document.addEventListener('visibilitychange', burst);
+  window.addEventListener('focus', burst);
+  window.addEventListener('online', burst);
+  document.addEventListener('pageshow', e => {
+    if (e.persisted) burst();
+  });
+}
+
 async function initApp() {
   gchatAPI = new GitHubAPI(config.repo, config.token);
   document.getElementById('status').textContent = hasAuthToken()
     ? `Connected · refresh ~${POLL_MS_AUTH / 1000}s`
-    : `Read-only · refresh ~${Math.round(POLL_MS_ANON / 1000)}s — add GitHub token (⚙️) for ~1s`;
+    : `Read-only · ~${Math.round(POLL_MS_ANON / 1000)}s between polls — save token (⚙️) for ~1s`;
   applyUiMode();
   startPolling();
+  bindWakePollingOnce();
 }
 
 async function pollMessagesOnce() {
-  const fetched = await gchatAPI.fetchNewMessages(lastMessageTime);
+  const fetched = await gchatAPI.fetchNewMessages();
   const incoming = [];
   for (const m of fetched) {
     if (!messages.some(x => x.id === m.id)) {

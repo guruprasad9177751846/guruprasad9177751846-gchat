@@ -62,16 +62,19 @@ class GitHubAPI {
     this.headers = githubRestHeaders(this.token);
   }
 
-  async fetchNewMessages(since = null) {
+  /** Pull latest issues (no `since` filter — avoids missing brand‑new issues next to timestamp boundaries). */
+  async fetchNewMessages() {
     try {
-      // desc + larger page: newest issues first (asc would return oldest 20 when many land between polls).
       let url =
         this.baseURL + '?sort=created&direction=desc&state=open&per_page=40';
-      if (since) url += `&since=${encodeURIComponent(since)}`;
 
-      // GitHub often sends Cache-Control: max-age=60 — without no-store browsers can reuse JSON for ~1 min.
+      // Bypass HTTP caches (GitHub often sends max-age=60 on responses).
       const response = await fetch(url, {
-        headers: this.headers,
+        headers: {
+          ...this.headers,
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache'
+        },
         cache: 'no-store'
       });
       if (!response.ok) {
