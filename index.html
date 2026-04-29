@@ -10,7 +10,12 @@
   <meta name="gchat-repo" content="guruprasad9177751846/guruprasad9177751846-gchat">
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(new URL('./sw.js', window.location.href), { scope: './' });
+      navigator.serviceWorker
+        .register(new URL('./sw.js', window.location.href), { scope: './', updateViaCache: 'none' })
+        .then(function (reg) {
+          reg.update();
+        })
+        .catch(function () {});
     }
   </script>
 </head>
